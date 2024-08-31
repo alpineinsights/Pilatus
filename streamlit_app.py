@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from fuzzywuzzy import process
 
 # Set page config
 st.set_page_config(page_title="Pilatus", page_icon="🤖")
@@ -74,30 +75,27 @@ def get_flowise_response(message, company):
 if not st.session_state.chat_started:
     st.write("Hi there, I am Pilatus. Which company do you want to discuss today?")
     
-    # Create a datalist with all company options
-    company_options = "".join([f"<option value='{company}'>" for company in companies])
-    st.markdown(f"""
-    <datalist id="company-list">
-    {company_options}
-    </datalist>
-    """, unsafe_allow_html=True)
+    company_input = st.text_input("Type a company name", key="company_input")
     
-    # Use text_input with datalist for autocompletion
-    company = st.text_input("Type a company name", key="company_input", autocomplete="off")
-    st.markdown("""
-    <script>
-    const input = document.querySelector('input[data-testid="stTextInput"]');
-    input.setAttribute('list', 'company-list');
-    </script>
-    """, unsafe_allow_html=True)
+    if company_input:
+        # Use fuzzy matching to find close matches
+        matches = process.extract(company_input, companies, limit=5)
+        
+        # Display matched companies
+        st.write("Did you mean one of these?")
+        for match, score in matches:
+            if st.button(match):
+                st.session_state.company = match
+                st.session_state.chat_started = True
+                st.experimental_rerun()
     
     if st.button("Start Chat"):
-        if company in companies:
-            st.session_state.company = company
+        if company_input in companies:
+            st.session_state.company = company_input
             st.session_state.chat_started = True
             st.experimental_rerun()
         else:
-            st.warning("Please enter a valid company name from the list before starting the chat.")
+            st.warning("Please select a valid company name from the suggestions before starting the chat.")
 
 # Main chat interface
 if st.session_state.chat_started:
