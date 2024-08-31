@@ -24,7 +24,7 @@ if "company" not in st.session_state:
 if "chat_started" not in st.session_state:
     st.session_state.chat_started = False
 
-# List of companies (this should be your full list of 9000 companies)
+# List of companies
 companies = [
     "adidas AG",
     "Brunello Cucinelli S.p.A",
@@ -74,7 +74,22 @@ def get_flowise_response(message, company):
 if not st.session_state.chat_started:
     st.write("Hi there, I am Pilatus. Which company do you want to discuss today?")
     
-    company = st.autocomplete("Type a company name", companies)
+    # Create a datalist with all company options
+    company_options = "".join([f"<option value='{company}'>" for company in companies])
+    st.markdown(f"""
+    <datalist id="company-list">
+    {company_options}
+    </datalist>
+    """, unsafe_allow_html=True)
+    
+    # Use text_input with datalist for autocompletion
+    company = st.text_input("Type a company name", key="company_input", autocomplete="off")
+    st.markdown("""
+    <script>
+    const input = document.querySelector('input[data-testid="stTextInput"]');
+    input.setAttribute('list', 'company-list');
+    </script>
+    """, unsafe_allow_html=True)
     
     if st.button("Start Chat"):
         if company in companies:
