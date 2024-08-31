@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-from fuzzywuzzy import process
 
 # Set page config
 st.set_page_config(page_title="Pilatus", page_icon="🤖")
@@ -71,6 +70,11 @@ def get_flowise_response(message, company):
     except requests.RequestException as e:
         return f"Sorry, I encountered an error: {str(e)}"
 
+# Simple string matching function
+def find_matches(input_string, choices, limit=5):
+    input_lower = input_string.lower()
+    return [choice for choice in choices if input_lower in choice.lower()][:limit]
+
 # Start of conversation
 if not st.session_state.chat_started:
     st.write("Hi there, I am Pilatus. Which company do you want to discuss today?")
@@ -78,16 +82,17 @@ if not st.session_state.chat_started:
     company_input = st.text_input("Type a company name", key="company_input")
     
     if company_input:
-        # Use fuzzy matching to find close matches
-        matches = process.extract(company_input, companies, limit=5)
+        matches = find_matches(company_input, companies)
         
-        # Display matched companies
-        st.write("Did you mean one of these?")
-        for match, score in matches:
-            if st.button(match):
-                st.session_state.company = match
-                st.session_state.chat_started = True
-                st.experimental_rerun()
+        if matches:
+            st.write("Did you mean one of these?")
+            for match in matches:
+                if st.button(match):
+                    st.session_state.company = match
+                    st.session_state.chat_started = True
+                    st.experimental_rerun()
+        else:
+            st.warning("No matching companies found. Please try again.")
     
     if st.button("Start Chat"):
         if company_input in companies:
